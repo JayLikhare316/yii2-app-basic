@@ -53,6 +53,15 @@ class SiteController extends Controller
             ],
         ];
     }
+    
+    /**
+     * Health check action for Docker
+     */
+    public function actionHealth()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        return ['status' => 'ok', 'timestamp' => time()];
+    }
 
     /**
      * Displays homepage.

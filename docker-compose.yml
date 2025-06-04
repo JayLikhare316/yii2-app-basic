@@ -1,9 +1,52 @@
-version: '2'
+version: '3.8'
+
 services:
-  php:
-    image: yiisoftware/yii2-php:7.4-apache
+  yii2-app:
+    image: ${DOCKER_IMAGE:-username/yii2-app:latest}
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    networks:
+      - yii2-network
     volumes:
-      - ~/.composer-docker/cache:/root/.composer/cache:delegated
-      - ./:/app:delegated
-    ports:
-      - '8000:80'
+      - yii2-runtime:/app/runtime
+      - yii2-assets:/app/web/assets
+    environment:
+      - YII_ENV=prod
+      - YII_DEBUG=0
+      - DB_HOST=${DB_HOST:-db}
+      - DB_NAME=${DB_NAME:-yii2basic}
+      - DB_USER=${DB_USER:-yii2user}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+
+  db:
+    image: mysql:5.7
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=${DB_NAME:-yii2basic}
+      - MYSQL_USER=${DB_USER:-yii2user}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-password}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - yii2-network
+
+networks:
+  yii2-network:
+    driver: overlay
+
+volumes:
+  yii2-runtime:
+  yii2-assets:
+  mysql-data:
